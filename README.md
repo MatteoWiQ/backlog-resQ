@@ -26,7 +26,26 @@ del tablero están en inglés porque son los que usa GitHub.
 
 Dos dígitos con cero a la izquierda, **un espacio**, sin dos puntos ni guiones
 después del ID. El ID **no se renumera nunca**: `HU-00` existe y renumerarlo
-chocaría con `HU-01` y rompería las referencias cruzadas.
+chotocería con `HU-01` y rompería las referencias cruzadas.
+
+### El ID no codifica el orden
+
+Un ID es una **clave permanente**, no un número de secuencia. El orden de
+trabajo lo define `Priority`, `Sprint` y el orden manual del tablero.
+
+**Consecuencia práctica: hay huecos y son normales.** `HU-27` seguido de
+`HU-28` no significa que falte historia: significa que esos IDs ya estaban
+asignados. Antes de dar de alta un item, verificá que el ID no exista.
+
+El repo ya tiene un caso donde la numeración quedó desalineada: **`HU-22`
+pertenece a EP-08 pero su número cae entre EP-06 y EP-07**. La regla de
+secuencia se rompió ahí y no se va a corregir renumerando, sino documentando
+el vínculo real vía `Parent issue`, que es la fuente de verdad.
+
+Corregirlo renumerando costaría reescribir 21 títulos en dos fases (liberar
+los números viejos antes de reasignarlos) y anularía toda referencia externa
+que ya apunte a esos IDs. El costo no compensa el beneficio estético.
+
 
 ### Formato de la historia de usuario
 
@@ -66,9 +85,9 @@ Tres reglas:
 | EP-03 Gestión de reportes | Crear, adjuntar, consultar, actualizar | HU-08 … HU-13 |
 | EP-04 Mapa y geolocalización | Visualizar, filtrar, ubicar | HU-14, HU-15, HU-16 |
 | EP-05 Voluntarios | Registro, consulta de casos, solicitudes | HU-17, HU-18, HU-19 |
-| EP-06 Organizaciones | Registro y gestión de casos | HU-20, HU-21 |
-| EP-07 Administración | Gestión de usuarios, reportes, organizaciones | HU-23, HU-24, HU-25 |
-| EP-08 Notificaciones y chat | Coordinar ayuda, notificar, mensajería | HU-22, HU-26, HU-27 |
+| EP-06 Organizaciones | Registro, ficha pública, directorio, adopciones | HU-20, HU-21, HU-28 … HU-31 |
+| EP-07 Administración | Verificación de organizaciones, métricas, solicitudes de voluntarios | HU-23 … HU-25, HU-32 … HU-35 |
+| EP-08 Notificaciones y chat | Notificaciones in-app, chat por caso, chat directo, moderación | HU-22, HU-26, HU-27, HU-36 … HU-40 |
 
 El vínculo HU → épica se materializa con el campo nativo **`Parent issue`**
 (sub-issues de GitHub), no con un campo de texto. Así la relación es
@@ -79,7 +98,7 @@ consultable y aparece en el body de ambos issues.
 | Tipo | Qué es |
 |---|---|
 | `Epic` | Una épica. 8 en total. |
-| `User Story` | Historia con el patrón `Como / Quiero / Para`. 24 en total. |
+| `User Story` | Historia con el patrón `Como / Quiero / Para`. 37 en total. |
 | `Task` | Trabajo técnico sin valor de usuario directo. 4 en total. |
 | `Bug` | Defecto. |
 
@@ -131,7 +150,7 @@ nivel de tablero.
 | `Won't` | Fuera de alcance explícito para la versión actual. |
 
 **Anti-patrón:** si el 100% de las historias es `Must`, no estás priorizando,
-estás sellando. La distribución actual es 14 / 9 / 4 / 1.
+estás sellando. La distribución actual es 13 / 13 / 9 / 2.
 
 ### Story Points
 
@@ -151,7 +170,12 @@ Reglas:
   refinamiento. Ponerle un número a algo no refinado anula el propósito de
   estimar.
 - La estimación siempre se acompaña del conteo de criterios que la justifica.
-- Total actual: **127 puntos en 27 historias**.
+- Total actual: **190 puntos en 40 ítems** (36 HU + 4 Task). `HU-27` sigue sin
+  estimar por no tener criterios.
+- **La heurística es gruesa y se nota en la distribución:** 28 de los 40 ítems
+  estimados valen 5. Una escala que devuelve el mismo número para casi todo no
+  discrimina. Cuando el reparto se aplane, se refina la escala antes que las
+  historias.
 
 ### Sprints
 
@@ -173,6 +197,16 @@ Asigna sprint sólo cuando la historia entra a `Ready`.
    Cualquier valor generado automáticamente es una *propuesta* a confirmar.
 5. **Cerrá duplicados con `state_reason: duplicate`** y un comentario que
    apunte al issue canónico.
+6. **Encoding en PowerShell 5.1.** Un `.ps1` guardado **sin BOM** se lee con
+   la codepage ANSI, y cualquier acento escrito en el literal queda
+   doble-encoded contra GitHub. Guardá los scripts con BOM, o poné los textos
+   con acentos en un archivo aparte leído con `-Encoding UTF8`. Verificá el
+   resultado a nivel de code points (`U+00C3` = mojibake), no a ojo.
+7. **No se pueden borrar issues por API.** `DELETE
+   /repos/{owner}/{repo}/issues/{n}` devuelve `404` aunque el PAT tenga
+   `admin: true` — GitHub restringió el endpoint y el PAT clásico ya no lo
+   habilita. Para retirar un item: cerrarlo (`PATCH state=closed` con un
+   comentario que explique el motivo) o borrarlo desde la UI.
 
 ---
 
@@ -205,20 +239,41 @@ El skill propone; vos aprobás; recién entonces escribe.
 
 ---
 
-## 6. Estado al 2026-09-26
+## 6. Estado al 2026-09-28
 
 | Métrica | Valor |
 |---|---|
-| Historias de usuario | 24 |
+| Ítems en el tablero | 49 |
+| Historias de usuario | 37 |
 | Tareas técnicas | 4 |
 | Épicas | 8 |
-| Story Points | 127 (en 27 historias; HU-27 sin estimar) |
-| MoSCoW | 14 Must · 9 Should · 4 Could · 1 Won't |
+| Story Points | 190 (en 40 ítems; `HU-27` sin estimar) |
+| MoSCoW (solo HU) | 13 Must · 13 Should · 9 Could · 2 Won't |
+| Sprints | Sprint 1 (5, cerrado) · Sprint 2 (6) · Sprint 3 (8) |
+| `Area` asignada | 11 de 49 |
+
+### Cambios de esta revisión
+
+Se agregaron **13 historias** repartidas en las tres épicas menos desarrolladas:
+
+- **EP-06 Organizaciones** (4): ficha pública, directorio de organizaciones,
+  registro de adopciones, seguimiento post-rescate.
+- **EP-07 Administración** (4): verificación documental de organizaciones,
+  métricas de casos, métricas de comunidad, revisión de solicitudes de
+  voluntarios.
+- **EP-08 Notificaciones y chat** (5): preferencias de notificación, bandeja
+  de notificaciones, entrega en tiempo real, gestión de conversaciones del
+  chat directo, denuncia/bloqueo en el chat.
+
+Todas entraron con `Status` = `Backlog`, sin `Sprint` y sin `Area`.
 
 Pendientes conocidos:
 
+- **Trabajo retirado, aún en el tablero:** `HU-31` (#45), `HU-33` (#47) y
+  `HU-34` (#48) quedaron fuera de alcance. No se pudieron borrar por API
+  (ver regla 7 de higiene); quedan pendientes de baja manual.
 - **7 de 8 épicas sin descripción.** Sólo EP-06 tiene cuerpo.
-- **HU-27** (`Mensajes entre usuarios`) no tiene criterios de aceptación y no
+- **`HU-27`** (`Mensajes entre usuarios`) no tiene criterios de aceptación y no
   fue estimada. Marcada `Won't` para v1.
 - **6 épicas tienen `Must` en `Priority`**, valor inválido para una épica.
 - **6 de 8 campos sin usar**: `Labels`, `Size`, `Estimate`, `Start date`,
